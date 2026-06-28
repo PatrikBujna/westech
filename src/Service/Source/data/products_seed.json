@@ -1,0 +1,26 @@
+[
+    {
+        "name": "Steel Water Bottle",
+        "description": "Insulated 1L stainless-steel bottle",
+        "brand": "Hydro",
+        "category": "Outdoor",
+        "price_excl_vat": "15.90",
+        "vat_rate": "23.00"
+    },
+    {
+        "name": "Cotton T-Shirt",
+        "description": "Unisex organic cotton tee",
+        "brand": "Wearly",
+        "category": "Clothing",
+        "price_excl_vat": "12.00",
+        "vat_rate": "23.00"
+    },
+    {
+        "name": "Wireless Mouse",
+        "description": "Ergonomic 2.4GHz mouse",
+        "brand": "Clicky",
+        "category": "Electronics",
+        "price_excl_vat": "24.50",
+        "vat_rate": "23.00"
+    }
+]

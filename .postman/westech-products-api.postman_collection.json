@@ -1,0 +1,252 @@
+{
+	"info": {
+		"_postman_id": "b7e1c2a4-0f3d-4a8e-9c11-products-api-001",
+		"name": "WesTech Products API",
+		"description": "HTTP REST API for managing products (PHP 8.4, no framework).\n\n## Getting started\n1. Start the stack: `docker compose up -d --build` and run migrations: `docker compose exec php php migrate.php`.\n2. Set the collection variables (Variables tab):\n   - `base_url` — defaults to `http://localhost:8080` (change if `PHP_PORT` differs).\n   - `auth_token` — must match `APP_AUTH_TOKEN` from your `.env`.\n3. All requests authenticate with a Bearer token (collection-level auth). Authentication is enforced on **every** endpoint, including the read-only ones.\n\n## Conventions\n- Success envelope: `{ \"data\": ..., \"meta\": { ... } }`.\n- Error envelope: `{ \"error\": { \"code\", \"message\", \"details\" } }`.\n- Monetary values (`price_excl_vat`, `vat_rate`) are sent as decimal **strings**, never floats, to preserve precision.\n- Creating a product captures the new id into the `product_id` collection variable, so Update/Delete work right after.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "{{auth_token}}",
+				"type": "string"
+			}
+		]
+	},
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:8080",
+			"type": "string"
+		},
+		{
+			"key": "auth_token",
+			"value": "changeme",
+			"type": "string"
+		},
+		{
+			"key": "product_id",
+			"value": "1",
+			"type": "string"
+		}
+	],
+	"item": [
+		{
+			"name": "Products",
+			"description": "CRUD operations on persisted products. All routes require the Bearer token.",
+			"item": [
+				{
+					"name": "Create product",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"// Capture the new product id so Update/Delete requests work out of the box.",
+									"if (pm.response.code === 201) {",
+									"    const body = pm.response.json();",
+									"    if (body && body.data && body.data.id !== undefined) {",
+									"        pm.collectionVariables.set('product_id', body.data.id);",
+									"        console.log('Saved product_id =', body.data.id);",
+									"    }",
+									"}",
+									"pm.test('status is 201 Created', function () {",
+									"    pm.response.to.have.status(201);",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Steel Water Bottle\",\n    \"description\": \"Insulated 1L stainless-steel bottle\",\n    \"brand\": \"Hydro\",\n    \"category\": \"Outdoor\",\n    \"price_excl_vat\": \"15.90\",\n    \"vat_rate\": \"23.00\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/products",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"products"
+							]
+						},
+						"description": "Create a product. Returns **201 Created** with the created product (incl. computed `price_with_vat`) and a `Location` header.\n\nRequired fields: `name`, `brand`, `category`, `price_excl_vat`, `vat_rate`. `description` is optional.\n\nThe response id is stored in the `product_id` collection variable."
+					},
+					"response": []
+				},
+				{
+					"name": "List products (filters + pagination)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/products?category=Outdoor&brand=Hydro&page=1&per_page=20",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"products"
+							],
+							"query": [
+								{
+									"key": "category",
+									"value": "Outdoor",
+									"description": "Filter by exact category. Empty/whitespace = no filter. Disable to skip."
+								},
+								{
+									"key": "brand",
+									"value": "Hydro",
+									"description": "Filter by exact brand. Empty/whitespace = no filter. Disable to skip."
+								},
+								{
+									"key": "page",
+									"value": "1",
+									"description": "Page number (>= 1). Non-numeric/out-of-range falls back to 1."
+								},
+								{
+									"key": "per_page",
+									"value": "20",
+									"description": "Items per page (1..100). Defaults to 20; clamped to a max of 100."
+								}
+							]
+						},
+						"description": "List products with all available options at once: `category`, `brand`, `page`, `per_page`. Disable any query param (uncheck it) to drop that filter — with all disabled you get the default listing (page 1, 20 per page).\n\nReturns `{ data: [...], meta: { page, per_page, total, total_pages } }`."
+					},
+					"response": []
+				},
+				{
+					"name": "Update product",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Steel Water Bottle XL\",\n    \"description\": \"Insulated 1.5L stainless-steel bottle\",\n    \"brand\": \"Hydro\",\n    \"category\": \"Outdoor\",\n    \"price_excl_vat\": \"19.90\",\n    \"vat_rate\": \"23.00\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/products/{{product_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"products",
+								"{{product_id}}"
+							]
+						},
+						"description": "Partial update — only the supplied fields are validated and changed, so you can send any subset (e.g. just `{ \"price_excl_vat\": \"17.50\" }`). Uses the `product_id` captured by the Create request. Returns **200 OK** with the updated product, **404** if it does not exist."
+					},
+					"response": []
+				},
+				{
+					"name": "Delete product",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/products/{{product_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"products",
+								"{{product_id}}"
+							]
+						},
+						"description": "Delete the product identified by `product_id`. Returns **204 No Content** on success, **404** if it does not exist."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Sample / Test data",
+			"description": "Read-only sample products from a configurable source. Nothing is persisted — copy a sample into the Create request to store it.",
+			"item": [
+				{
+					"name": "Get sample products — local dataset",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/products/test?source=local",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"products",
+								"test"
+							],
+							"query": [
+								{
+									"key": "source",
+									"value": "local",
+									"description": "Read samples from the local JSON dataset shipped with the app."
+								}
+							]
+						},
+						"description": "Sample products from the **local** dataset (`src/Service/Source/data/products_seed.json`)."
+					},
+					"response": []
+				},
+				{
+					"name": "Get sample products — DummyJSON",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/products/test?source=dummyjson",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"products",
+								"test"
+							],
+							"query": [
+								{
+									"key": "source",
+									"value": "dummyjson",
+									"description": "Fetch samples from the external DummyJSON API (https://dummyjson.com). Requires outbound internet access from the PHP container."
+								}
+							]
+						},
+						"description": "Sample products fetched live from the **DummyJSON** external API and mapped to the product shape."
+					},
+					"response": []
+				}
+			]
+		}
+	]
+}
